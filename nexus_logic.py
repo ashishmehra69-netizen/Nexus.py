@@ -27,12 +27,15 @@ assert Groq is not None, "Groq import failed"
 # MOVE THESE LINES TO AFTER WHERE groq_key IS DEFINED IN YOUR CODE
 # For now, let's define a simple version:
 GROQ_API_KEYS = [
-    os.environ.get('GROQ_API_KEY_1', ''),
-    os.environ.get('GROQ_API_KEY_2', ''),
-    os.environ.get('GROQ_API_KEY_3', ''), 
-    os.environ.get('GROQ_API_KEY_4', ''),
-    os.environ.get('GROQ_API_KEY', ''),  # Fallback to main key
+    os.environ.get('GROQ_API_KEY_1', '').strip(),
+    os.environ.get('GROQ_API_KEY_2', '').strip(),
+    os.environ.get('GROQ_API_KEY_3', '').strip(),
+    os.environ.get('GROQ_API_KEY_4', '').strip(),
+    os.environ.get('GROQ_API_KEY', '').strip(),
 ]
+
+# Remove empty keys
+GROQ_API_KEYS = [key for key in GROQ_API_KEYS if key]
 # Filter out empty keys
 GROQ_API_KEYS = [key for key in GROQ_API_KEYS if key]
 
