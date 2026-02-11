@@ -14,6 +14,7 @@ from urllib.parse import urlparse
 import sqlite3
 import uuid
 from datetime import datetime
+import requests
 
 from groq import Groq
 
@@ -806,6 +807,63 @@ Return ONLY valid JSON array, no markdown."""
 
     # CRITICAL: Always return a valid dict
     return result
+
+def fetch_company_from_google(company_name: str) -> Dict:
+    try:
+        import requests
+
+        GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+        GOOGLE_CSE_ID = os.environ.get("GOOGLE_CSE_ID")
+
+        if not GOOGLE_API_KEY or not GOOGLE_CSE_ID:
+            print("⚠️ Google API not configured")
+            return None
+
+        url = "https://www.googleapis.com/customsearch/v1"
+        params = {
+            "key": GOOGLE_API_KEY,
+            "cx": GOOGLE_CSE_ID,
+            "q": f"{company_name} company overview competitors industry",
+            "num": 5
+        }
+
+        response = requests.get(url, params=params, timeout=10)
+
+        if response.status_code != 200:
+            print("Google API error:", response.text)
+            return None
+            
+        data = response.json()
+
+        items = data.get("items", [])
+
+        if not items:
+            return None
+
+        overview = ""
+        sources = []
+
+        for item in items:
+            overview += f"{item.get('title')}\n{item.get('snippet')}\n\n"
+            sources.append(item.get("link"))
+
+        return {
+            'has_data': True,
+            'overview': overview.strip(),
+            'industry': '',
+            'size': '',
+            'products': '',
+            'news': [],
+            'competitors': [],
+            'market_trends': [],
+            'strategic_context': '',
+            'sources': sources
+        }
+
+    except Exception as e:
+        print("Google fallback failed:", e)
+        return None
+        
 def fetch_company_research(company_name: str) -> Dict:
     """Research a company using AI knowledge base"""
     
@@ -912,6 +970,13 @@ Include specific numbers, market positions, and real competitors."""
         print(f"  ✗ Research failed: {e}")
         import traceback
         traceback.print_exc()
+        # Try Google fallback before minimal research
+        print("🔎 Trying Google fallback...")
+        google_data = fetch_company_from_google(company_name)
+
+        if google_data:
+            return google_data
+
         return create_minimal_research(company_name)
 
 
@@ -4168,8 +4233,8 @@ def create_prog(topic, fmt, dur, aud_lvl, company_name, company_context, deliver
     if not topic: 
         return (
             "Enter topic", "Locked", "Locked", "Locked", "Waiting", 
-            gr.update(visible=False), None, "Generate first", "",
-            None, None, None, gr.update(visible=True), gr.update(visible=False)
+            False, None, "Generate first", "",
+            None, None, None, True, False
         )
     
     try:
@@ -4296,10 +4361,10 @@ Return ONLY valid JSON, no markdown."""
             if result is None:
                 print("❌ ERROR: gen_training returned None!")
                 return (
-                    "Error: Training generation failed", "Error", "Error", "Error", "Error generating training", 
-                    gr.update(visible=False), sid, "Error", "",
-                    None, None, None, gr.update(visible=True), gr.update(visible=False)
-                )
+                "Error: Training generation failed", "Error", "Error", "Error", "Error generating training", 
+                False, sid, "Error", "",
+                None, None, None, True, False
+            )
             
             if isinstance(result, tuple) and len(result) >= 2:
                 cont, generation_id = result[0], result[1]
@@ -4320,8 +4385,8 @@ Return ONLY valid JSON, no markdown."""
                 print("❌ ERROR: gen_workshop returned None!")
                 return (
                     "Error: Workshop generation failed", "Error", "Error", "Error", "Error generating workshop", 
-                    gr.update(visible=False), sid, "Error", "",
-                    None, None, None, gr.update(visible=True), gr.update(visible=False)
+                    False, sid, "Error", "",
+                    None, None, None, True, False
                 )
             
             cont = result[0] if isinstance(result, tuple) else result
@@ -4342,8 +4407,8 @@ Return ONLY valid JSON, no markdown."""
                 print("❌ ERROR: gen_action returned None!")
                 return (
                     "Error: Action Learning generation failed", "Error", "Error", "Error", "Error generating action learning", 
-                    gr.update(visible=False), sid, "Error", "",
-                    None, None, None, gr.update(visible=True), gr.update(visible=False)
+                    False, sid, "Error", "",
+                    None, None, None, True, False
                 )
             
             cont = result[0] if isinstance(result, tuple) else result
@@ -4364,8 +4429,8 @@ Return ONLY valid JSON, no markdown."""
         if stat=="Error": 
             return (
                 syn, "Failed", "Failed", "Failed", "Error", 
-                gr.update(visible=False), sid, "Error", "",
-                None, None, None, gr.update(visible=True), gr.update(visible=False)
+                False, sid, "Error", "",
+                None, None, None, True, False
             )
         
         progress(0.7, desc="Creating facilitator guide...")
@@ -4427,9 +4492,9 @@ Modules: {mods}"""
         
         return (
             syn, lock, lock, lock, stat_msg, 
-            gr.update(visible=True), sid, "Generate and unlock to export", "",
+            True, sid, "Generate and unlock to export", "",
             generation_id, topic, company_name, 
-            gr.update(visible=False), gr.update(visible=True)
+            False, True
         )
         
     except Exception as e:
@@ -4438,8 +4503,8 @@ Modules: {mods}"""
         traceback.print_exc()
         return (
             str(e), "Error", "Error", "Error", "Error", 
-            gr.update(visible=False), None, "Error", "",
-            None, None, None, gr.update(visible=True), gr.update(visible=False)
+            False, None, "Error", "",
+            None, None, None, True, False
         )
 
     # Load saved state on startup
@@ -4467,7 +4532,7 @@ def generate_with_feedback(topic, audience, duration, aud_lvl, company_name, com
     return (
         training_content,  # Display content
         generation_id,  # Store generation ID
-        gr.update(visible=True),  # Show feedback section
+        True,  # Show feedback section
         topic,  # Store topic for feedback
         company_name  # Store company name for feedback
     )
@@ -5287,9 +5352,9 @@ My methodology blends deep inner clarity with sharp business relevance—helping
 def on_generate_clicked(topic_val, company_name_val, company_context_val, fmt_val, dur_val, aud_lvl_val, delivery_mode_val, sid_val):
     if not topic_val or not topic_val.strip():
         return (
-            gr.update(visible=False),
-            gr.update(visible=False),
-            gr.update(visible=False),
+            False,
+            False,
+            False,
             {},
             "",
             "⚠️ Please enter a topic first!"
@@ -5314,9 +5379,9 @@ def on_generate_clicked(topic_val, company_name_val, company_context_val, fmt_va
     print(f"[UI] Domain detected: {domain}")
 
     return (
-        gr.update(visible=True),                          # smart_context_form
-        gr.update(visible=domain in technical_domains),   # technical_section
-        gr.update(visible=domain in behavioral_domains),  # behavioral_section
+        True,                          # smart_context_form
+        domain in technical_domains,   # technical_section
+        domain in behavioral_domains,  # behavioral_section
         stored,                                           # pending_inputs
         domain,                                           # detected_domain
         f"📊 Domain: {domain.title()} — answer questions below or skip"  # status
