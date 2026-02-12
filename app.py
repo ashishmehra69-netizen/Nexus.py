@@ -247,9 +247,4 @@ if __name__ == '__main__':
         port=7860,
         debug=False
     )
-    # TEMPORARY: File Fixer UI
-import nexus_fixer_ui
-
-# Launch fixer instead of main app (TEMPORARY)
-if __name__ == "__main__":
-    nexus_fixer_ui.fixer_app.launch()
+   
