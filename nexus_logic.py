@@ -4462,8 +4462,6 @@ Return ONLY valid JSON, no markdown."""
         }
         save_state()
         
-        lock = f"# LOCKED\n\nFull {fmt.lower()} after unlock.\n\nClick Unlock."
-        
         # Calculate modules based on duration
         if dur == "Half Day (3-4 hours)":
             mods = 2
@@ -4490,12 +4488,12 @@ Modules: {mods}"""
         
         stat_msg += "\n\n🔓 Click 'Unlock Full Access' to view!"
         
-        return (
-            syn, lock, lock, lock, stat_msg, 
-            True, sid, "Generate and unlock to export", "",
-            generation_id, topic, company_name, 
-            False, True
-        )
+return (
+    syn, cont, fac, hand, stat_msg, 
+    True, sid, "Generate and unlock to export", "",
+    generation_id, topic, company_name, 
+    False, True
+)
         
     except Exception as e:
         print(f"Error in create_prog: {e}")
