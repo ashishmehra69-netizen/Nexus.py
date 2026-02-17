@@ -786,13 +786,33 @@ Return ONLY valid JSON array, no markdown."""
             print(f"✅ Generated {len(frameworks)} frameworks: {[f['name'] for f in frameworks]}")
             
             # Convert to source format
+            def get_premium_url(name, dom):
+                query = name.replace(' ', '+')
+                d = dom.lower()
+                if d in ['medical', 'healthcare']:
+                    return f"https://pubmed.ncbi.nlm.nih.gov/?term={query}"
+                elif d in ['engineering', 'manufacturing', 'technical', 'automotive']:
+                    return f"https://www.asme.org/search?q={query}"
+                elif d in ['it', 'software', 'technology']:
+                    return f"https://stackoverflow.com/search?q={query}"
+                elif d in ['finance', 'accounting']:
+                    return f"https://www.cfainstitute.org/search#q={query}"
+                elif d in ['legal']:
+                    return f"https://www.law.com/search/?q={query}"
+                elif d in ['education']:
+                    return f"https://www.edutopia.org/search?q={query}"
+                elif d in ['sales', 'marketing']:
+                    return f"https://hbr.org/search?term={query}"
+                else:
+                    return f"https://hbr.org/search?term={query}"
+
             ai_sources = []
             for fw in frameworks[:5]:
                 ai_sources.append({
                     'site': fw.get('source', f'{domain.title()} Framework'),
                     'title': fw['name'],
                     'snippet': f"{fw['description']} Application: {fw['application']}",
-                    'url': f"https://www.google.com/search?q={fw['name'].replace(' ', '+')}"
+                    'url': get_premium_url(fw['name'], domain)
                 })
             
             result['sources'] = ai_sources
@@ -4332,7 +4352,7 @@ Return ONLY valid JSON, no markdown."""
                         'site': f"{fw['source']} (Tailored for {company_name})",
                         'title': fw['name'],
                         'snippet': f"{fw['description']} RELEVANCE TO {company_name.upper()}: {fw['why_relevant_to_company']} APPLICATION: {fw['application_to_company']}",
-                        'url': f"https://www.google.com/search?q={fw['name'].replace(' ', '+')}"
+                        'url': get_premium_search_url(fw['name'], domain)
                     })
                 
                 print(f"✅ Added {len(company_frameworks)} company-specific frameworks")
