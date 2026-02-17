@@ -134,7 +134,7 @@ def generate():
         facilitator = result[2]
         handout = result[3]
         status_msg = result[4]
-        session_id = result[6]
+        session_id = result[6] if result[6] else sid
         ppt_instructions = result[7]
         ppt_prompt = result[8]
         generation_id = result[9] if len(result) > 9 else None
