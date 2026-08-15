@@ -60,7 +60,7 @@ if not GROQ_API_KEYS:
     print("⚠️ WARNING: No GROQ API keys found!")
 
 current_key_index = 0
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "openai/gpt-oss-120b"
 
 # ADD: Groq fallback function
 def get_groq_client():
